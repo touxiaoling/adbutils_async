@@ -1,0 +1,253 @@
+import hashlib
+import os
+import random
+import shlex
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import typing
+import zipfile
+import pathlib
+import asyncio
+import logging
+
+import whichcraft
+from apkutils2.axml.axmlparser import AXML
+from apkutils2.manifest import Manifest
+from pkg_resources import resource_filename
+
+MB = 1024 * 1024
+_logger = logging.getLogger(__name__)
+
+
+def append_path(base: typing.Union[str, pathlib.Path], addition: str) -> str:
+    if isinstance(base, pathlib.Path):
+        return (base / addition).as_posix()
+    else:
+        return base + "/" + addition if base[-1] != "/" else base + addition
+
+
+def humanize(n: int) -> str:
+    return "%.1f MB" % (float(n) / MB)
+
+
+def is_port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def get_free_port():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("127.0.0.1", 0))
+        try:
+            return s.getsockname()[1]
+        finally:
+            s.close()
+    except OSError:
+        # bind 0 will fail on Manjaro, fallback to random port
+        # https://github.com/openatx/adbutils/issues/85
+        for _ in range(20):
+            port = random.randint(10000, 20000)
+            if not is_port_in_use(port):
+                return port
+        raise RuntimeError("No free port found")
+
+
+def list2cmdline(args: typing.Union[list, tuple]):
+    """do not use subprocess.list2cmdline, use this instead
+
+    Reason:
+        subprocess.list2cmdline(['echo', '&']) --> "a &", but what I expect should be "a '&'"
+    """
+    return " ".join(map(shlex.quote, args))
+
+
+def current_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        return ip
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
+
+
+def adb_path():
+    # 0. check env: ADBUTILS_ADB_PATH
+    if os.getenv("ADBUTILS_ADB_PATH"):
+        return os.getenv("ADBUTILS_ADB_PATH")
+
+    # 1. find in $PATH
+    exe = whichcraft.which("adb")
+    if exe and _is_valid_exe(exe):
+        return exe
+
+    # 2. use buildin adb
+    bin_dir = resource_filename("adbutils", "binaries")
+    exe = os.path.join(bin_dir, "adb.exe" if os.name == "nt" else "adb")
+    if os.path.isfile(exe) and _is_valid_exe(exe):
+        return exe
+
+    raise RuntimeError("No adb exe could be found. Install adb on your system")
+
+
+def _popen_kwargs(prevent_sigint=False):
+    startupinfo = None
+    preexec_fn = None
+    creationflags = 0
+    if sys.platform.startswith("win"):
+        # Stops executable from flashing on Windows (see imageio/imageio-ffmpeg#22)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    if prevent_sigint:
+        # Prevent propagation of sigint (see imageio/imageio-ffmpeg#4)
+        # https://stackoverflow.com/questions/5045771
+        if sys.platform.startswith("win"):
+            creationflags = 0x00000200
+        else:
+            preexec_fn = os.setpgrp  # the _pre_exec does not seem to work
+    return {
+        "startupinfo": startupinfo,
+        "creationflags": creationflags,
+        "preexec_fn": preexec_fn,
+    }
+
+
+def _is_valid_exe(exe: str):
+    cmd = [exe, "version"]
+    try:
+        subprocess.check_call(
+            cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, **_popen_kwargs()
+        )
+        return True
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return False
+
+
+async def async_run(command, timeout=20):
+    _logger.info(f"run command {command}")
+    process = await asyncio.create_subprocess_shell(" ".join(command))
+
+    async with asyncio.timeout(timeout):
+        await process.communicate()
+
+    return subprocess.CompletedProcess(args=command, returncode=process.returncode)
+
+
+class ReadProgress:
+    def __init__(self, r, total_size: int, source_path=None):
+        """
+        Args:
+            source_path (str): store read content to filepath
+        """
+        self.r = r
+        self.total = total_size
+        self.copied = 0
+        self.start_time = time.time()
+        self.update_time = time.time()
+        self.m = hashlib.md5()
+        self._chunk_size = 0
+        self._hash = ""
+        self._tmpfd = None if source_path else tempfile.NamedTemporaryFile(suffix=".apk")
+        self._filepath = source_path
+
+    def update(self, chunk: bytes):
+        chunk_size = len(chunk)
+        self.m.update(chunk)
+        if chunk_size == 0:
+            self._hash = self.m.hexdigest()
+        self.copied += chunk_size
+        self._chunk_size += chunk_size
+
+        if self.total:
+            percent = float(self.copied) / self.total * 100
+        else:
+            percent = 0.0 if chunk_size else 100.0
+
+        p = int(percent)
+        duration = time.time() - self.update_time
+        if p == 100.0 or duration > 1.0:
+            if duration:
+                speed = humanize(self._chunk_size / duration) + "/s"
+            else:
+                copytime = max(0.1, time.time() - self.start_time)
+                speed = humanize(self.copied / copytime) + "/s"
+
+            self.update_time = time.time()
+            self._chunk_size = 0
+
+            copysize = humanize(self.copied)
+            totalsize = humanize(self.total)
+            print("{:.1f}%\t{} [{}/{}]".format(percent, speed, copysize, totalsize))
+
+    def read(self, n: int) -> bytes:
+        chunk = self.r.read(n)
+        self.update(chunk)
+        if self._tmpfd:
+            self._tmpfd.write(chunk)
+        return chunk
+
+    def filepath(self):
+        if self._filepath:
+            return self._filepath
+        self._tmpfd.seek(0)
+        return self._tmpfd.name
+
+
+class APKReader:
+    def __init__(self, fp: typing.BinaryIO):
+        self._fp = fp
+
+    def dump_info(self):
+        zf = zipfile.ZipFile(self._fp)
+        raw_manifest = zf.read("AndroidManifest.xml")
+        axml = AXML(raw_manifest)
+        if not axml.is_valid:
+            print("axml is invalid")
+            return
+        am = Manifest(axml.get_xml())
+        print("package:", am.package_name)
+        print("main-activity:", am.main_activity)
+        print("version-name:", am.version_name)
+        print("version-code:", am.version_code)
+
+
+class StopEvent:
+    def __init__(self):
+        self.__stop = threading.Event()
+        self.__done = threading.Event()
+
+    def stop(self, timeout=None):
+        """send stop signal and wait signal accepted
+
+        Raises:
+            TimeoutError
+        """
+        self.__stop.set()
+        if not self.__done.wait(timeout):
+            raise TimeoutError("wait for stopped timeout", timeout)
+
+    def stop_nowait(self):
+        """send stop signal"""
+        self.__stop.set()
+
+    def is_stopped(self) -> bool:
+        return self.__stop.is_set()
+
+    def done(self):
+        """for worker thread to notify stop signal accepted"""
+        self.__done.set()
+
+    def is_done(self) -> bool:
+        """check if background worker has stopped"""
+        return self.__done.is_set()
+
+    def reset(self):
+        self.__stop.clear()
+        self.__done.clear()

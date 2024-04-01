@@ -1,0 +1,51 @@
+[project]
+name = "phonescanweb2"
+version = "0.1.0"
+description = "A sample Python project"
+authors = [{name = "tomin", email = "tomin@tmoin.com"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.urls]
+homepage = "https://example.com/my_project"
+repository = "https://github.com/example/my_project"
+documentation = "https://my_project.readthedocs.io"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+
+[tool.flake8]
+max-line-length = 128
+exclude = [
+    ".git",
+    "__pycache__",
+]
+
+[tool.black]
+line-length = 128
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 128
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = ["F401",]
+
+[tool.isort]
+profile = "black"

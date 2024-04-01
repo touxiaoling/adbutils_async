@@ -1,0 +1,6 @@
+whichcraft
+lxml
+httpx
+Pillow
+deprecation
+retry
