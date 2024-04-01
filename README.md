@@ -44,38 +44,45 @@ Example
 
 ## Connect ADB Server
 ```python
+import asyncio
 import adbutils_async
+async def main()
+    adb = await adbutils_async.AdbClient(host="127.0.0.1", port=5037)
+    for info in await adb.list():
+        print(info.serial, info.state)
+        # <serial> <device|offline>
 
-adb = await adbutils_async.AdbClient(host="127.0.0.1", port=5037)
-for info in await adb.list():
-    print(info.serial, info.state)
-    # <serial> <device|offline>
+    # only list state=device
+    print(await adb.device_list())
 
-# only list state=device
-print(await adb.device_list())
-
-# Set socket timeout to 10 (default None)
-adb = await adbutils_async.AdbClient(host="127.0.0.1", port=5037, socket_timeout=10)
-print(await adb.device_list())
+    # Set socket timeout to 10 (default None)
+    adb = await adbutils_async.AdbClient(host="127.0.0.1", port=5037, socket_timeout=10)
+    print(await adb.device_list())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 The above code can be short to `from adbutils_async import adb`
 
 ## List all the devices and get device object
 ```python
+import asyncio
 from adbutils_async import adb
 
-for d in await adb.device_list():
-    print(d.serial) # print device serial
+async def main()
+    for d in await adb.device_list():
+        print(d.serial) # print device serial
 
-d = await adb.device(serial="33ff22xx")
+    d = await adb.device(serial="33ff22xx")
 
-# or
-d = await adb.device(transport_id=24) # transport_id can be found in: adb devices -l
+    # or
+    d = await adb.device(transport_id=24) # transport_id can be found in: adb devices -l
 
-# You do not need to offer serial if only one device connected
-# RuntimeError will be raised if multi device connected
-d = await adb.device()
+    # You do not need to offer serial if only one device connected
+    # RuntimeError will be raised if multi device connected
+    d = await adb.device()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 The following code will not write `from adbutils import adb` for short
@@ -167,36 +174,40 @@ I assume there is only one device connected.
 
 ```python
 import io
+import asyncio
 from adbutils_async import adb
 
-d = await adb.device()
+async def main():
+    d = await adb.device()
 
-print(await d.serial) # 获取序列号
+    print(await d.serial) # 获取序列号
 
-# Argument support list, str
-serial = await d.shell(["getprop", "ro.serial"]) # 获取Prop信息
+    # Argument support list, str
+    serial = await d.shell(["getprop", "ro.serial"]) # 获取Prop信息
 
-# Same as
-serial = await d.shell("getprop ro.serial")
+    # Same as
+    serial = await d.shell("getprop ro.serial")
 
-# Set timeout for shell command
-await d.shell("sleep 1", timeout=0.5) # Should raise adbutils.AdbTimeout
+    # Set timeout for shell command
+    await d.shell("sleep 1", timeout=0.5) # Should raise adbutils.AdbTimeout
 
-# The advanced shell (returncode archieved by add command suffix: ;echo EXIT:$?)
-ret = await d.shell2("echo 1")
-print(ret)
-# expect: ShellReturn(args='echo 1', returncode=0, output='1\n')
+    # The advanced shell (returncode archieved by add command suffix: ;echo EXIT:$?)
+    ret = await d.shell2("echo 1")
+    print(ret)
+    # expect: ShellReturn(args='echo 1', returncode=0, output='1\n')
 
-# show property, also based on d.shell
-print(d.prop.name) # output example: surabaya
-d.prop.model
-d.prop.device
-d.prop.get("ro.product.model")
-d.prop.get("ro.product.model", cache=True) # a little faster, use cache data first
+    # show property, also based on d.shell
+    print(d.prop.name) # output example: surabaya
+    d.prop.model
+    d.prop.device
+    d.prop.get("ro.product.model")
+    d.prop.get("ro.product.model", cache=True) # a little faster, use cache data first
 
-await d.get_serialno() # same as adb get-serialno
-await d.get_devpath() # same as adb get-devpath
-await d.get_state() # same as adb get-state
+    await d.get_serialno() # same as adb get-serialno
+    await d.get_devpath() # same as adb get-devpath
+    await d.get_state() # same as adb get-state
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 Take screenshot
