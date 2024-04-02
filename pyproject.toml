@@ -1,8 +1,8 @@
 [project]
 name = "adbutils_async"
-version = "0.1.0"
+version = "v0.0.1"
 description = "A sample Python project"
-authors = [{name = "tomin", email = "tomin@tmoin.com"}]
+authors = [{name = "tomin", email = "tomin@tomin.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,6 +11,9 @@ requires-python = ">=3.10"
 homepage = "https://github.com/touxiaoling/adbutils_async"
 repository = "https://github.com/touxiaoling/adbutils_async"
 documentation = "https://github.com/touxiaoling/adbutils_async"
+
+[tool.setuptools_scm]
+write_to = "package_name/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
