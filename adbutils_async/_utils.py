@@ -1,4 +1,5 @@
 import hashlib
+import importlib.resources
 import os
 import random
 import shlex
@@ -14,10 +15,11 @@ import pathlib
 import asyncio
 import logging
 
-import whichcraft
+from shutil import which
 from apkutils2.axml.axmlparser import AXML
 from apkutils2.manifest import Manifest
-from pkg_resources import resource_filename
+
+from .errors import AdbError
 
 MB = 1024 * 1024
 _logger = logging.getLogger(__name__)
@@ -54,7 +56,7 @@ def get_free_port():
             port = random.randint(10000, 20000)
             if not is_port_in_use(port):
                 return port
-        raise RuntimeError("No free port found")
+        raise AdbError("No free port found")
 
 
 def list2cmdline(args: typing.Union[list, tuple]):
@@ -78,23 +80,35 @@ def current_ip():
         s.close()
 
 
+def _get_bin_dir():
+    if sys.version_info < (3, 9):
+        context = importlib.resources.path("adbutils.binaries", "__init__.py")
+    else:
+        ref = importlib.resources.files("adbutils.binaries") / "__init__.py"
+        context = importlib.resources.as_file(ref)
+    with context as path:
+        pass
+    # Return the dir. We assume that the data files are on a normal dir on the fs.
+    return str(path.parent)
+
+
 def adb_path():
     # 0. check env: ADBUTILS_ADB_PATH
     if os.getenv("ADBUTILS_ADB_PATH"):
         return os.getenv("ADBUTILS_ADB_PATH")
 
     # 1. find in $PATH
-    exe = whichcraft.which("adb")
+    exe = which("adb")
     if exe and _is_valid_exe(exe):
         return exe
 
     # 2. use buildin adb
-    bin_dir = resource_filename("adbutils", "binaries")
+    bin_dir = _get_bin_dir()
     exe = os.path.join(bin_dir, "adb.exe" if os.name == "nt" else "adb")
     if os.path.isfile(exe) and _is_valid_exe(exe):
         return exe
 
-    raise RuntimeError("No adb exe could be found. Install adb on your system")
+    raise AdbError("No adb exe could be found. Install adb on your system")
 
 
 def _popen_kwargs(prevent_sigint=False):

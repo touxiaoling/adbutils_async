@@ -15,6 +15,7 @@ __all__ = [
     "RunningAppInfo",
     "ShellReturn",
     "AdbDeviceInfo",
+    "AppInfo",
 ]
 
 import enum

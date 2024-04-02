@@ -687,7 +687,7 @@ class AdbDevice(BaseDevice):
     def __is_percent(self, v):
         return isinstance(v, float) and v <= 1.0
 
-    async def click(self, x, y):
+    async def click(self, x, y) -> None:
         """
         simulate android tap
 
@@ -700,9 +700,9 @@ class AdbDevice(BaseDevice):
             x = int(x * w) if is_percent(x) else x
             y = int(y * h) if is_percent(y) else y
         x, y = map(str, [x, y])
-        return await self.shell(["input", "tap", x, y])
+        await self.shell(["input", "tap", x, y])
 
-    async def swipe(self, sx, sy, ex, ey, duration: float = 1.0):
+    async def swipe(self, sx, sy, ex, ey, duration: float = 1.0) -> None:
         """
         swipe from start point to end point
 
@@ -718,7 +718,7 @@ class AdbDevice(BaseDevice):
             ex = int(ex * w) if is_percent(ex) else ex
             ey = int(ey * h) if is_percent(ey) else ey
         x1, y1, x2, y2 = map(str, [sx, sy, ex, ey])
-        return await self.shell(["input", "swipe", x1, y1, x2, y2, str(int(duration * 1000))])
+        await self.shell(["input", "swipe", x1, y1, x2, y2, str(int(duration * 1000))])
 
     async def send_keys(self, text: str):
         """
@@ -1101,14 +1101,17 @@ class AdbDevice(BaseDevice):
         Raises:
             AdbError
         """
-        output = await self.shell("uiautomator dump /data/local/tmp/uidump.xml && echo success")
-        if "Success" not in output:
+        target = '/data/local/tmp/uidump.xml'
+        output = await self.shell(
+            f'rm -f {target}; uiautomator dump {target} && echo success')
+        if 'ERROR' in output or 'success' not in output:
             raise AdbError("uiautomator dump failed", output)
 
-        buf = b""
-        for chunk in self.sync.iter_content("/data/local/tmp/uidump.xml"):
-            buf += chunk
-        return buf.decode("utf-8")
+        buf= await self.sync.read_bytes(target)
+        xml_data = buf.decode("utf-8")
+        if not xml_data.startswith('<?xml'):
+            raise AdbError("dump output is not xml", xml_data)
+        return xml_data
 
     @retry(AdbError, delay=0.5, tries=3, jitter=0.1)
     async def app_current(self) -> RunningAppInfo:
