@@ -22,6 +22,10 @@ jobs:
         run: |
           python3 -m pip install wheel
           python3 -m pip install -r requirements.txt
+      - name: Build targz and wheel
+        run: |
+          python3 setup.py sdist
+          python3 build_wheel.py
       - name: mint API token
         id: mint-token
         run: |
