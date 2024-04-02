@@ -1,6 +1,6 @@
 [project]
 name = "adbutils_async"
-version = "v0.0.1"
+version = "v0.0.2"
 description = "A sample Python project"
 authors = [{name = "tomin", email = "tomin@tomin.com"}]
 license = {file = "LICENSE"}
