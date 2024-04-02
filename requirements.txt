@@ -1,4 +1,3 @@
-whichcraft
 lxml
 httpx
 Pillow

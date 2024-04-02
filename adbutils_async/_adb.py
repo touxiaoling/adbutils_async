@@ -3,7 +3,6 @@ import os
 import typing
 from typing import Union
 import weakref
-import struct
 
 from ._utils import adb_path, async_run
 from ._proto import DeviceEvent, AdbCmd
