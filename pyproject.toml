@@ -1,16 +1,16 @@
 [project]
-name = "phonescanweb2"
+name = "adbutils_async"
 version = "0.1.0"
 description = "A sample Python project"
 authors = [{name = "tomin", email = "tomin@tmoin.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 [project.urls]
-homepage = "https://example.com/my_project"
-repository = "https://github.com/example/my_project"
-documentation = "https://my_project.readthedocs.io"
+homepage = "https://github.com/touxiaoling/adbutils_async"
+repository = "https://github.com/touxiaoling/adbutils_async"
+documentation = "https://github.com/touxiaoling/adbutils_async"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
