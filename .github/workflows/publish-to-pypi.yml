@@ -2,9 +2,7 @@ on:
   release:
     types:
       - published
-  push:
-    tags:
-      - '*'
+      
 name: release
 
 jobs:
