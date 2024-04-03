@@ -6,7 +6,16 @@ authors = [{ name = "tomin", email = "tomin@tomin.com" }]
 license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["httpx", "Pillow", "deprecation", "retry","apkutils2"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = ["httpx", "Pillow", "deprecation", "retry", "apkutils2"]
+keywords = ["adb", "adbutils", "async"]
 
 [project.urls]
 homepage = "https://github.com/touxiaoling/adbutils_async"
