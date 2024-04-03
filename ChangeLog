@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+* fix build info
 * fix readme
 * add test code
 * fix pypi published

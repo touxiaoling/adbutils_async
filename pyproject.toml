@@ -1,6 +1,6 @@
 [project]
 name = "adbutils_async"
-version = "0.0.3"
+dynamic = ["version"]
 description = "Python adb async library for adb service."
 authors = [{ name = "tomin", email = "tomin@tomin.com" }]
 license = { file = "LICENSE" }
@@ -23,8 +23,12 @@ repository = "https://github.com/touxiaoling/adbutils_async"
 documentation = "https://github.com/touxiaoling/adbutils_async"
 
 [build-system]
-requires = ["setuptools", "wheel", "pbr"]
+requires = ["setuptools","setuptools-scm[toml]", "wheel", "pbr"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+tag_regex = '^(tag\-with\-dash\/v)?(?P<version>\d+[^\+]*)$'
+git_describe_command = 'git describe --tags --match tag-with-dash/v*'
 
 [tool.pytest.ini_options]
 minversion = "6.0"
