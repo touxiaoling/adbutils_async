@@ -5,8 +5,6 @@
 #
 # https://docs.travis-ci.com/user/deployment/pypi/
 
-from __future__ import print_function
-
 import setuptools
 import subprocess
 import sys
