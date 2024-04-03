@@ -36,7 +36,7 @@ fork from [adbutils](https://github.com/openatx/adbutils)
 
 # Install
 ```
-pip3 install adbutils_async
+pip3 install adbutils-async
 ```
 
 # Usage
