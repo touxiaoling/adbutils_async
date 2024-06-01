@@ -45,7 +45,7 @@ class AdbConnection(object):
             return await asyncio.open_connection(self.__host, self.__port)
         except ConnectionRefusedError:
             # 20s should enough for adb start
-            await async_run((adb_path(), "start-server"), timeout=20.0)
+            await async_run((adb_path(), "-P", str(self.__port), "start-server"), timeout=20.0)
             return await asyncio.open_connection(self.__host, self.__port)
 
     async def safe_connect(self):
