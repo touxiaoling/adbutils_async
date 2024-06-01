@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* adb start-server port config
+* fix build info
 * fix build info
 * fix readme
 * add test code
