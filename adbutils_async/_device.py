@@ -451,7 +451,7 @@ class Sync:
             while 1:
                 if AdbCmd.DONE == await c.read(4):
                     break
-                mode, size, mtime, namelen = struct.unpack("<IIII", c.read(16))
+                mode, size, mtime, namelen = struct.unpack("<IIII", await c.read(16))
                 name = await c.read_string(namelen)
                 try:
                     mtime = datetime.datetime.fromtimestamp(mtime)
