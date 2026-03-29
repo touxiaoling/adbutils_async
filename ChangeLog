@@ -1,16 +1,34 @@
 CHANGES
 =======
 
+* Fix unawaited read
+
+v0.0.5
+------
+
+* fix build
 * adb start-server port config
+
+v0.0.4
+------
+
 * fix build info
 * fix build info
 * fix readme
+
+v0.0.3
+------
+
 * add test code
 * fix pypi published
 * rm package
 * rm package
 * sync adbutils
 * fix pypi published
+
+v0.0.2
+------
+
 * fix pypi published
 * fix pypi published
 * fix pypi published
